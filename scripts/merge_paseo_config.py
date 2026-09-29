@@ -47,6 +47,9 @@ def main() -> int:
     ap.add_argument("--fragment", required=True)
     ap.add_argument("--config", required=True)
     ap.add_argument("--force", action="store_true", help="overwrite differing hermes-* entries")
+    ap.add_argument("--remove", action="store_true",
+                    help="remove the room's providers + agent profiles (revert path); "
+                         "foreign providers are never touched")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -61,6 +64,46 @@ def main() -> int:
     existed = os.path.isfile(args.config)
     cfg = load(args.config)
     before = json.dumps(cfg, sort_keys=True)
+
+    if args.remove:
+        providers = cfg.setdefault("agents", {}).setdefault("providers", {})
+        gone = [k for k in list(providers) if k in frag_providers]
+        for k in gone:
+            providers.pop(k)
+        daemon = cfg.setdefault("daemon", {})
+        profiles = daemon.get("agentProfiles")
+        if not isinstance(profiles, list):
+            print("error: daemon.agentProfiles is not a list — refusing to touch it", file=sys.stderr)
+            return 2
+        keep = [p for p in profiles if not str(p.get("provider", "")).startswith("hermes-")]
+        gone_profiles = len(profiles) - len(keep)
+        daemon["agentProfiles"] = keep
+
+        print(f"config: {args.config} (remove mode)")
+        print(f"  providers removed: {gone or '-'}")
+        print(f"  agentProfiles removed: {gone_profiles}")
+        other = sorted(k for k in providers if not k.startswith("hermes-"))
+        print(f"  untouched non-room providers: {', '.join(other) if other else '(none)'}")
+
+        if json.dumps(cfg, sort_keys=True) == before:
+            print("nothing to remove (already clean)")
+            return 0
+        if args.dry_run:
+            print("dry-run: nothing written")
+            return 0
+        backup = f"{args.config}.bak-{time.strftime('%Y%m%d-%H%M%S')}"
+        if os.path.exists(backup):
+            backup = f"{backup}-{os.getpid()}"
+        shutil.copy2(args.config, backup)
+        print(f"  backup: {backup}")
+        tmp = f"{args.config}.tmp-{os.getpid()}"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(cfg, fh, indent=2, ensure_ascii=False)
+            fh.write("\n")
+        json.load(open(tmp, encoding="utf-8"))
+        os.replace(tmp, args.config)
+        print(f"  written: {args.config}")
+        return 0
 
     cfg.setdefault("agents", {}).setdefault("providers", {})
     providers = cfg["agents"]["providers"]

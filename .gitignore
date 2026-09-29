@@ -1,6 +1,7 @@
-# state archives carry secrets (.env) and session history — never commit them
-state/
-*.tar.gz
 *.bak-*
-.env
 baselines/
+.env
+__pycache__/
+state/
+# state archives carry secrets (.env) and session history — never commit them
+*.tar.gz

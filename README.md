@@ -1,82 +1,176 @@
 # hermes-room-kit
 
-Bộ cài cho **agent room** của anh: Supervisor → nhiều Lead theo domain → Peer, chạy trên Paseo Desktop + Hermes.
-Kit này trả lời 2 việc:
+A portable **seat-based agent room** for coding work: one human, one **Supervisor**, N **Lead** seats split by domain, and **Peer** seats that each own exactly one bounded write scope.
 
-| Việc | Đọc gì |
-|---|---|
-| **Dùng room cho một dự án khác** | [`docs/NEW-PROJECT.md`](docs/NEW-PROJECT.md) |
-| **Dựng room trên máy mới** | phần "Máy mới" ngay dưới đây |
+It runs on [Paseo](https://paseo.sh) (UI + daemon + agent orchestration) and [Hermes Agent](https://hermes-agent.nousresearch.com) (the agent runtime behind each seat). This kit installs the room onto a machine, and turns any project — brand new or five years old — into a room-shaped workstream.
 
-Nguồn sự thật của kit là **máy đang chạy room** — sau mỗi lần cải tiến skill/brief, chạy `bash scripts/capture.sh` để cập nhật kit, rồi `git commit`.
+> **Tóm tắt (tiếng Việt):** máy mới → `bash install.sh` → điền API key vào 3 file `.env` → `bash verify.sh`. Dự án mới hay cũ → `bash scripts/onboard-project.sh /path/to/project --run-tests` → mở `brief-*.md`, dán khối text vào ghế **Supervisor**. Chi tiết: [`docs/ONBOARDING.md`](docs/ONBOARDING.md) (tiếng Việt).
 
 ---
 
-## Máy mới — 5 bước
+## Why this shape
 
-```bash
-# 1. Cài Hermes (bắt buộc) và Paseo Desktop (bắt buộc để có UI + daemon)
-#    Hermes: theo hướng dẫn cài của anh (installer/script) — kiểm tra: hermes --version
-#    Paseo:  https://paseo.sh/download  → mở app 1 lần cho nó tự dựng daemon
+Multi-agent setups usually fail for boring reasons: two agents editing one file, a "done" claim with no artifact behind it, a wave everyone calls parallel that actually ran serially, or an agent starting the app on the host while the project only runs in Docker.
 
-# 2. Lấy kit về máy mới (git clone, scp, hay copy cả thư mục đều được)
+The kit encodes the fixes as *seat contracts* and *gate rules*, not vibes:
 
-# 3. Cài đặt (idempotent — chạy lại nhiều lần không sao)
-cd hermes-room-kit
-bash install.sh                 # thêm --dry-run để xem trước, không ghi gì
+- **One owner per moving scope.** Every Peer works in its own git worktree + branch; shared files (`cli.py`, `README.md`, the contract) are single-writer and land in a later wave.
+- **A wave is dispatched in one turn.** All worktrees + all agents of a wave are created in the same assistant turn, then the dispatcher waits for events. Parallelism is *proved* with the `[createdAt, updatedAt]` intervals from the agent daemon — never inferred from commit times.
+- **Review is a gate, not a formality.** The Lead reads the artifact itself (`git show`, the harness, the raw output) and sends corrections back to the **same** Peer on the **same** branch until nothing needs changing. A verdict without captured raw output is a review failure.
+- **The Supervisor never implements.** It verifies claims against live state (git log, worktree list, the acceptance command it runs itself) and reports numbers to the human.
+- **The human owns the irreversible.** Push, merge to the real branch, production data, scope changes, new dependencies.
 
-# 4. Điền API key cho từng profile (install.sh đã tạo sẵn file .env trống)
-#    ~/.hermes/profiles/{supervisor,lead,peer}/.env   →  SWICLOUD_API_KEY=...
+## Architecture
 
-# 5. Kiểm tra
-bash verify.sh                  # kỳ vọng: "20 passed, 0 failed"
+```
+Human  ──asks/decides──▶  Supervisor        (routes, monitors, verifies, reports; never codes)
+                             │
+                             ├── Lead Backend ──────┬── Peer ──▶ one worktree + branch + one scope
+                             ├── Lead Frontend ─────┴── Peer ──▶ one worktree + branch + one scope
+                             └── Lead Architecture  └── Peer ──▶ one worktree + branch + one scope
+                                        │
+                                        └── reviews every artifact, integrates, ACCEPTs/REJECTs
 ```
 
-Sau đó mở Paseo Desktop: trong danh sách provider/agent sẽ có **Supervisor / Lead / Peer** (provider `hermes-supervisor`, `hermes-lead`, `hermes-peer`).
+One Lead per domain, not one Lead total. A single-domain project uses one Lead.
 
-`install.sh` cài:
-- 3 profile Hermes (`config.yaml` + `AGENTS.md` — bản hợp đồng vai trò)
-- Hợp đồng dùng chung: `~/.hermes/profiles/WORKFLOW.md`, `PROMPT_TEMPLATES.md`
-- 3 skill của room: `paseo-room-supervisor` (supervisor), `paseo-lead-orchestration` (lead), `scoped-change-briefs` (peer)
-- Mục provider + agent profile trong `~/.paseo/config.json` (**merge**, không thay cả file; tự backup)
+## What the kit installs
 
-Nó **không** copy: `.env` (secret), `state.db`, sessions, memories, cache, log, worktree.
+| Item | Where it lands | What it is |
+|---|---|---|
+| 3 Hermes profiles | `~/.hermes/profiles/{supervisor,lead,peer}/` | seat config (`config.yaml`) + role contract (`AGENTS.md`) + a `.env` template |
+| Shared room contract | `~/.hermes/profiles/{WORKFLOW.md,PROMPT_TEMPLATES.md}` | the rules every seat reads at session start |
+| 3 room skills | `~/.hermes/profiles/*/skills/…` | `paseo-room-supervisor` (supervisor), `paseo-lead-orchestration` (lead), `scoped-change-briefs` (peer) — the accumulated operating knowledge |
+| Paseo provider + agent profiles | merged into `~/.paseo/config.json` | `hermes-supervisor` / `hermes-lead` / `hermes-peer` entries that launch `hermes acp --profile <seat>` |
 
-### Muốn mang theo cả trí nhớ / lịch sử session (tuỳ chọn)
+`install.sh` **merges** into `~/.paseo/config.json` — foreign providers and daemon settings are preserved, and a timestamped backup is always written first. Wholesale replacement of that file is a known way to silently delete someone's seats (the `codex-room-setup` installer does exactly that, plus it links `~/.local/bin/paseo`); this kit never does.
+
+## Requirements
+
+- **Hermes Agent** installed and on `PATH` (`hermes --version`). Developed against v0.21.x.
+- **Paseo Desktop** (AppImage/dmg) — it spawns the daemon at `127.0.0.1:6767`. Optional for `install.sh`, but this is where agents actually run. The optional `paseo` CLI (`@getpaseo/cli`) makes config reloads and agent listings easier.
+- `bash`, `git`, `python3`.
+- **An LLM provider key.** The shipped profiles are configured for a SwiCloud-compatible endpoint (`SWICLOUD_API_KEY`); point them at any OpenAI-compatible provider by editing `providers:` in each `profiles/*/config.yaml` and the matching `key_env` in the seat's `.env`.
+
+## Quickstart — install on a machine
 
 ```bash
-# TRÊN MÁY CŨ
-bash scripts/carry-state.sh capture --with-history --with-secrets
-#   -> state/room-state-<seat>.tar.gz  (memories + cron + hooks + plugins + SOUL.md
-#      + snapshot state.db + .env). Bỏ 2 cờ đó thì chỉ mang memories/cron/hooks/plugins.
+# 1. Hermes + Paseo Desktop installed, Paseo opened once so the daemon exists
 
-# copy thư mục state/ sang máy mới (cùng chỗ với kit), rồi:
+# 2. get the kit (clone, scp, zip — it is ~300 KB)
+git clone <this repo> hermes-room-kit && cd hermes-room-kit
+
+# 3. install (idempotent; --dry-run prints without writing)
 bash install.sh
-bash scripts/carry-state.sh restore --with-history --with-secrets
+
+# 4. put your API key in each seat's .env
+#    ~/.hermes/profiles/{supervisor,lead,peer}/.env  →  SWICLOUD_API_KEY=...
+#    (secrets are per-profile; ~/.hermes/.env is NOT inherited by a profile)
+
+# 5. verify
+bash verify.sh          # expect: "20 passed, 0 failed"
 ```
 
-Ghi chú thật:
-- `.env` chứa API key → `state/` phải nằm ngoài git (đã có trong `.gitignore`), copy bằng scp/USB, xong thì xoá.
-- `hermes profile export/import` (đường native) **hiện lỗi** với các profile này: archive chứa symlink (`skills/skills`, `lsp/bin/pyright-langserver`) nên import báo `Unsupported archive member type`. Mình đã test cả 3 ghế — dùng `carry-state.sh` thay thế.
+Then open Paseo Desktop: the **Supervisor / Lead / Peer** agent profiles are listed.
 
-### Nếu máy mới không có `paseo` CLI
-
-Không sao. `install.sh` sẽ nhắc: đóng và mở lại **Paseo Desktop** để nạp config mới — làm lúc **không có agent nào đang chạy** (restart daemon sẽ kill agent đang chạy). Có `paseo` CLI thì dùng `paseo daemon reload` (không kill agent).
-
----
-
-## Máy đang chạy → kit (giữ kit khớp thực tế)
+To prove the kit itself works without a second machine:
 
 ```bash
-cd hermes-room-kit
-bash scripts/capture.sh          # chụp lại profiles + skills + fragment Paseo từ máy này
-git diff                          # xem thay đổi, commit
+bash scripts/selftest.sh     # installs into a throwaway root, checks idempotency + the revert path
 ```
 
----
+## Use it on a project
 
-## Paseo MCP + gotcha
+```bash
+bash scripts/onboard-project.sh /path/to/project --run-tests
+```
 
-- Mỗi `tool_call` chỉ chứa **1 lệnh MCP** local (batch >1 bị reject) — nhưng **cả wave trong cùng một lượt**.
-- Worktree của peer nằm ở `~/.paseo/worktrees/<id>/peer-<scope>`.
-- ⚠️ Repo `codex-room-setup` **ghi đè toàn bộ** `~/.paseo/config.json` (mất ghế hermes-*) và tạo link `~/.local/bin/paseo`. Không dùng trừ khi anh thật sự muốn ghế Codex. Kit này chỉ merge đúng 3 provider `hermes-*`.
+It auto-detects whether the project is **new** (no git / no remote / young history) or **long-running** (remote, history, CI) — printing its evidence, so you can override with `--mode`. It writes `baselines/baseline-*.md` (git state, the project's *real* test command, the baseline result, repo shape, CI, existing rules) and `baselines/brief-*.md` — a paste-ready brief for the Supervisor seat plus the four things you must decide first.
+
+The two modes differ in exactly the ways that matter:
+
+| | **New project** | **Long-running project** |
+|---|---|---|
+| Product contract | Supervisor writes `README` (scope, acceptance, constraints) and commits the base | Supervisor reconciles acceptance against the existing repo — it does not rewrite history |
+| Acceptance | suite green **including a real end-to-end test** + a real smoke run | **no regression**: the same pre-existing failures stay failing; new behaviour gets new tests, old tests are never edited |
+| Integration | merge to the repo's default branch (nobody depends on it yet) | merge to an integration branch `room/<task-slug>`; the human merges/pushes for real |
+| Parallelism | many peers (independent modules) | fewer peers — only genuinely independent files; never fake-split |
+| Main risk | scope creep | breaking something that already runs (schema, style, dependencies, the dev environment) |
+
+Full guide: [`docs/ONBOARDING.md`](docs/ONBOARDING.md).
+
+### Agree the execution environment first
+
+Before any peer runs anything, settle this with the human — it is the most common way a wave goes wrong:
+
+- Are host commands allowed at all? Many projects run **only in Docker**: the app may already be running in dev mode in a container, so a peer must never start a server or run `npm`/`node` on the host. Valid tools are `docker exec` / `docker cp` against the existing containers; `docker compose up/down/restart` is off-limits.
+- Which container serves the app, on which internal port, and what does it mount? If it mounts `src/` from the main checkout, then a peer's worktree **is not what runs**, and writing to that mounted `src/` hot-reloads the human's live environment.
+- Where may test data be written? Peers tag it, clean up, and prove residuals are zero.
+
+## Update the kit from the machine that runs it
+
+```bash
+bash scripts/capture.sh     # re-snapshot profiles, skills and the Paseo fragment from the live machine
+git diff && git commit
+```
+
+Improve a skill where you actually use it, then capture. Do not let the kit copy and the live copy drift apart.
+
+## Scripts
+
+| Script | Purpose |
+|---|---|
+| `install.sh` | install/refresh the room on this machine (`--dry-run`, `--force`, custom `--root`/`--paseo-home` for testing) |
+| `verify.sh` | assert the install is real: files, contracts, keys present, Hermes lists the profiles, Paseo providers/profiles, daemon liveness |
+| `scripts/selftest.sh` | prove the kit itself: installs into a throwaway root, checks idempotency, runs `verify.sh`, checks the revert path |
+| `scripts/onboard-project.sh` | one entrypoint for any project: detect new/existing, write baseline + paste-ready Supervisor brief |
+| `scripts/onboard-repo.sh` | the raw baseline report (git state, real test command, suite result, repo shape, CI, lint traps) |
+| `scripts/room-cleanup.sh` | inventory the worktrees a room leaves behind; `--apply` removes only clean+merged ones |
+| `scripts/capture.sh` | snapshot the live room back into the kit (profiles, skills, Paseo fragment) |
+| `scripts/carry-state.sh` | move seat state (memories, cron, hooks, optionally `state.db` + `.env`) to another machine |
+| `scripts/merge_paseo_config.py` | merge — or with `--remove`, revert — the room's Paseo entries; never touches foreign providers |
+
+## Repo layout
+
+```
+install.sh · verify.sh · README.md · LICENSE
+profiles/{supervisor,lead,peer}/{config.yaml,AGENTS.md}
+profiles/shared/{WORKFLOW.md,PROMPT_TEMPLATES.md}
+skills/{supervisor,lead,peer}/<category>/<skill>/{SKILL.md,references,templates}
+paseo/room.fragment.json          # the provider + agent-profile entries to merge
+scripts/…                         # see the table above
+docs/{ONBOARDING.md,OPERATIONS.md}
+baselines/                        # generated per project (gitignored)
+```
+
+## Security and secrets
+
+- The kit never copies secrets or runtime state. `.env` files are written as **empty templates**; keys are per-profile and stay on the machine.
+- `scripts/carry-state.sh` includes `.env` only with the explicit `--with-secrets` flag; its output lands in `state/`, which is gitignored. Move it over `scp`/USB, then delete it.
+- The room never pushes to a remote. Push, merges to protected branches, production data operations and dependency changes are human decisions, always.
+- Evidence rule for reviews: raw output on disk at an absolute path, a negative control, and an explicit "not proven" list — a green test suite alone is not proof of a working feature.
+
+## What this kit does not do
+
+- It does not install Hermes or Paseo, and it cannot create a "second machine" proof for you — `selftest.sh` covers the kit's own logic, not a fresh OS.
+- It does not carry session history or memories by default (that is the opt-in `carry-state.sh`).
+- It does not create CI. Verification is a gate the seats run, plus `selftest.sh` for the kit.
+- `hermes profile export/import` is currently unusable with these profiles (the archives contain symlinks → `Unsupported archive member type`); `carry-state.sh` is the working path.
+
+## Troubleshooting
+
+`docs/OPERATIONS.md` has the full list (mode-inheritance errors, `tool_call` batching limits, the serial-wave trap, missing `node_modules` in worktrees, the `lint --fix` rewrite trap, exact agent timestamps). The short version:
+
+```bash
+bash verify.sh                                # is the install real?
+bash scripts/selftest.sh                      # is the kit itself sound?
+curl -s http://127.0.0.1:6767/api/health      # is the daemon alive?
+```
+
+## Language
+
+`README.md` is in English for portability; `docs/ONBOARDING.md` and `docs/OPERATIONS.md` are in Vietnamese (the language this room was operated in). Skill files are in English because the seats read them.
+
+## License
+
+MIT — see [`LICENSE`](LICENSE).

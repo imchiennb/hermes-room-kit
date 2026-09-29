@@ -28,6 +28,18 @@ head_() { printf '\n%s\n' "$*"; }
 head_ "Runtime"
 if command -v hermes >/dev/null 2>&1; then
   ok "hermes on PATH ($(hermes --version 2>/dev/null | head -1))"
+  if [ "$HERMES_PROFILES_DIR" = "$HOME/.hermes/profiles" ]; then
+    listed="$(hermes profile list 2>/dev/null)"
+    for seat in supervisor lead peer; do
+      if printf '%s' "$listed" | grep -qw "$seat"; then
+        ok "hermes itself lists profile '$seat'"
+      else
+        bad "hermes does not list profile '$seat' (files on disk are not enough)"
+      fi
+    done
+  else
+    warn "custom --root given: skipped 'hermes profile list' (it only reads the default root)"
+  fi
 else
   bad "hermes not on PATH — ACP seats cannot start"
 fi
