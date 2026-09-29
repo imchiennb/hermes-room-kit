@@ -12,11 +12,11 @@ providers:
     base_url: "https://providers.swicloud.ink/v1"
     key_env: SWICLOUD_API_KEY
     api_mode: chat_completions
-    default_model: "ds/deepseek-v4-flash"
+    default_model: "cmc/deepseek/deepseek-v4-flash"
     discover_models: true
 
 model:
-  default: "ds/deepseek-v4-flash"
+  default: "cmc/deepseek/deepseek-v4-flash"
   provider: custom:swicloud
 
 agent:
