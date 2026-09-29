@@ -2,6 +2,14 @@
 
 Khác biệt cốt lõi so với dự án mới: **repo không còn là sân trống**. Có lịch sử, có remote, có test đang đỏ, có quy ước riêng, có người khác đang làm. Room phải *hoà vào* repo đó, không được viết lại theo ý mình.
 
+## Bước 0 — Điều kiện (chốt với Human TRƯỚC khi dispatch)
+
+Phải hỏi và ghi vào brief, đừng tự suy:
+1. **Chạy ở đâu?** — "mọi thứ chạy trong docker, không được chạy lệnh nào ngoài docker" là ràng buộc rất thường gặp. Nếu app đã chạy sẵn (dev mode), peer **không được** tự start server, càng không được chạy `npm`/`node` trên host. Lệnh hợp lệ: `docker exec` / `docker cp` vào container đang có; `docker compose up/down/restart` là **cấm** (đụng vào stack của Human).
+2. **Container nào phục vụ app, port nội bộ nào, mount gì?** — kiểm bằng `docker inspect`: mount `src/` từ checkout chính nghĩa là **code trong worktree của peer KHÔNG phải thứ đang chạy**, và ghi vào `src/` đó sẽ hot-reload môi trường dev của Human (cấm tuyệt đối).
+3. **Ghi dữ liệu test vào đâu?** — DB local trong docker thì phải được Human cho phép, test phải tag rồi tự dọn và chứng minh residual = 0.
+4. **Cổng nghiệm thu thật là gì** — repo không có test suite thì build/behaviour, nhưng phải là lệnh chạy **trong docker**.
+
 ## Bước 1 — Supervisor chụp baseline (bắt buộc, trước khi dispatch)
 
 ```bash
