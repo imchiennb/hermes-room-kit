@@ -63,7 +63,14 @@ if [ "$is_git" = 1 ]; then
     [ -e "$PROJ/$c" ] && ci="$c" && break
   done
   if [ -n "$first_commit" ]; then
-    age_days=$(( ( $(date +%s) - $(date -d "$first_commit" +%s 2>/dev/null || echo "$(date +%s)") ) / 86400 ))
+    age_days="$(python3 - "$first_commit" <<'PY'
+import datetime, sys
+try:
+    print((datetime.date.today() - datetime.date.fromisoformat(sys.argv[1])).days)
+except Exception:
+    print(0)
+PY
+)"
   fi
 fi
 
@@ -91,7 +98,7 @@ if [ "$is_git" = 1 ]; then
 else
   {
     printf '# Baseline report — %s (greenfield)\n' "$slug"
-    printf '_generated %s_\n\n' "$(date -Iseconds)"
+    printf '_generated %s_\n\n' "$(date +%Y-%m-%dT%H:%M:%S%z)"
     printf '## Not a git repo yet\n'
     printf -- '- path: `%s`\n' "$PROJ"
     printf -- '- action: `git init`, write README (product contract), commit the base, then re-run this script\n\n'
@@ -103,7 +110,7 @@ fi
 # ---------------------------------------------------------------- brief (paste-ready)
 {
   printf '# Onboard brief — %s (%s)\n\n' "$slug" "$detected"
-  printf '_generated %s · baseline: `%s`_\n\n' "$(date -Iseconds)" "$baseline"
+  printf '_generated %s · baseline: `%s`_\n\n' "$(date +%Y-%m-%dT%H:%M:%S%z)" "$baseline"
   printf '## Facts (không suy diễn — đọc từ repo)\n\n'
   printf -- '- mode: **%s** — lý do: %s\n' "$detected" "$mode_why"
   printf -- '- path: `%s`\n' "$PROJ"

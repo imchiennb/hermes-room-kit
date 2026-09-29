@@ -39,7 +39,7 @@ emit() { printf '%s\n' "$*"; [ -n "$OUT" ] && printf '%s\n' "$*" >> "$OUT"; }
 [ -n "$OUT" ] && : > "$OUT"
 
 emit "# Baseline report — $(basename "$REPO")"
-emit "_generated $(date -Iseconds) on $(hostname)_"
+emit "_generated $(date +%Y-%m-%dT%H:%M:%S%z) on $(hostname)_"
 emit ""
 
 emit "## Repository"
@@ -130,7 +130,7 @@ import json,sys
 try: print(json.load(open('.prettierrc')).get('endOfLine',''))
 except Exception: print('')" 2>/dev/null)"
   if [ "$pol" = "crlf" ]; then
-    crlf=$(git ls-files '*.ts' '*.js' 2>/dev/null | head -200 | xargs -r grep -lc $'\r' 2>/dev/null | wc -l)
+    crlf=$(git ls-files '*.ts' '*.js' 2>/dev/null | head -200 | while IFS= read -r f; do [ -f "$f" ] && LC_ALL=C grep -q $'\r' "$f" 2>/dev/null && echo x; done | wc -l)
     [ "$crlf" = 0 ] && emit "- ⚠️ prettier wants \`endOfLine: crlf\` but tracked files are LF → prettier rule noise (thousands of lint errors) and \`--fix\` would rewrite every file. Not an acceptance gate."
   fi
 fi
