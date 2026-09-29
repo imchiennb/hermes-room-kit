@@ -7,7 +7,7 @@ license: MIT
 metadata:
   hermes:
     tags: [git, worktree, cli, testing, handoff]
-    related_skills: [test-driven-development, requesting-code-review]
+    related_skills: [test-driven-development, requesting-code-review, e2e-proof-verification]
 ---
 
 # Scoped change briefs
@@ -25,6 +25,9 @@ command output, verbatim.
   handoff to another agent or to the user.
 - You must add commands/endpoints to an existing dispatch surface without touching the
   modules around it.
+- The brief scopes PROOF instead of a change (verification peer: no product code, raw HTTP and
+  store output required, harness outside the repo). That is a different procedure than the one
+  below — use the `e2e-proof-verification` skill.
 
 ## Procedure
 

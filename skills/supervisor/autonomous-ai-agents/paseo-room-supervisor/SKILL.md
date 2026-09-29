@@ -82,3 +82,4 @@ Corrections go to the **same** peer on the **same** branch via `send_agent_promp
 ## References
 
 - `references/briefs.md` — brief skeletons for Supervisor -> Lead and Lead -> Peer.
+- Portable installer for this room (new machine / new project): `~/projects/hermes-room-kit` — `install.sh`, `verify.sh`, `scripts/capture.sh`, `scripts/carry-state.sh`, `docs/NEW-PROJECT.md`. Re-run `scripts/capture.sh` there after changing this skill so the kit stays in sync.
