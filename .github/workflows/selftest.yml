@@ -1,0 +1,28 @@
+name: selftest
+
+# Proves the kit itself on a clean Linux runner: installs the room into a
+# throwaway root, checks idempotency, runs verify.sh against it, and checks the
+# revert path. No Hermes/Paseo installation is required on the runner — the
+# "hermes on PATH" assertion is downgraded to a warning there.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: bash syntax check
+        run: |
+          for f in install.sh verify.sh scripts/*.sh; do
+            bash -n "$f" || { echo "syntax error in $f"; exit 1; }
+          done
+
+      - name: python syntax check
+        run: python3 -m py_compile scripts/merge_paseo_config.py
+
+      - name: kit self-test
+        run: bash scripts/selftest.sh

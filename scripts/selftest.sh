@@ -95,7 +95,7 @@ grep -q "already current" "$TMP/install2.log" && ok "skills recognised as alread
 
 head_ "verify.sh against the installed room"
 for seat in supervisor lead peer; do printf 'SWICLOUD_API_KEY=dummy-self-test\n' > "$ROOT/$seat/.env"; done
-bash "$KIT_DIR/verify.sh" --root "$ROOT" --paseo-home "$PASEO" >"$TMP/verify.log" 2>&1
+bash "$KIT_DIR/verify.sh" --root "$ROOT" --paseo-home "$PASEO" --allow-missing-hermes >"$TMP/verify.log" 2>&1
 vrc=$?
 tail -3 "$TMP/verify.log" | sed 's/^/    /'
 [ "$vrc" -eq 0 ] && ok "verify.sh exited 0" || bad "verify.sh exited $vrc"

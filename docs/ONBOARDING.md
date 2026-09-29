@@ -72,7 +72,8 @@ Báo cáo cho Human: `scope | peer id | candidate | số vòng review | test tr�
 
 Push, merge vào nhánh thật, chạy script trên DB thật, đánh index prod, xoá dữ liệu, đổi scope/hợp đồng, thêm dependency. Loop tự chạy phần còn lại; chỉ escalate khi bế tắc thật hoặc chạm các việc trên.
 
-## Ví dụ đã chạy thật
+## Ví dụ đã chạy thật (đã ẩn danh)
 
-- **Greenfield** (`webapp`): 4 scope (model/storage/service/cli) — 3 wave, tất cả ACCEPT, 197 test xanh, smoke test CLI thật.
-- **Brownfield** (`the project`, NestJS trên docker, không có test suite): baseline = `npm run build` + phát hiện `npm run lint` có `--fix` (sẽ ghi lại 315 file) và `.prettierrc` CRLF làm 18k lỗi lint → lint bị loại khỏi cổng nghiệm thu; task chứng minh G4/G5 chạy 2 peer song song 20 phút, verdict PROVEN kèm frame socket thô, **không đụng code sản phẩm**.
+- **Greenfield** (một CLI Python nhỏ): 4 scope (model/storage/service/cli) — 3 wave, tất cả ACCEPT, ~200 test xanh, smoke test CLI thật.
+- **Brownfield** (một service NestJS chạy trong docker, **không có test suite**): baseline chỉ có `npm run build`; phát hiện `npm run lint` chứa `--fix` (sẽ ghi lại hàng trăm file) và `.prettierrc` CRLF làm hàng chục nghìn lỗi lint → lint bị loại khỏi cổng nghiệm thu; task chứng minh chạy 2 peer song song ~20 phút, verdict PROVEN kèm frame socket thô, **không đụng code sản phẩm**.
+- **Bài học đắt nhất**: peer khởi động service **trên host** trong khi dự án chỉ chạy trong docker → cả wave phải brief lại. Vì vậy Bước 0 ở trên là bắt buộc.

@@ -65,7 +65,7 @@ mcp__paseo__create_workspace(
 
 One worktree = one write scope = one owner. Never assign two peers to the same worktree.
 
-**Naming (user-mandated)**: user-visible titles must be `<scope> — <purpose>` for workspaces and `<Role> <Domain> — <scope>` for agents (e.g. `Peer Backend — render`, `Lead Backend — webapp`). Do not leave ad-hoc ids like `peer-render-v2` as the agent title.
+**Naming (user-mandated)**: user-visible titles must be `<scope> — <purpose>` for workspaces and `<Role> <Domain> — <scope>` for agents (e.g. `Peer Backend — render`, `Lead Backend — api`). Do not leave ad-hoc ids like `peer-render-v2` as the agent title.
 
 ### 3. Create Agents (one per `tool_call` invocation, ALL in the same Lead turn)
 

@@ -2,19 +2,24 @@
 # verify.sh — check that the room is actually installed on THIS machine.
 # Reads the live files; never prints secrets. Exit code 1 if anything FAILs.
 #
-#   bash verify.sh [--root DIR] [--paseo-home DIR]
+#   bash verify.sh [--root DIR] [--paseo-home DIR] [--allow-missing-hermes]
+#
+# --allow-missing-hermes downgrades "hermes on PATH" (and the profile-list check)
+# to warnings — used by scripts/selftest.sh and CI runners without Hermes installed.
 set -uo pipefail
 
 KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HERMES_PROFILES_DIR="${HERMES_PROFILES_DIR:-$HOME/.hermes/profiles}"
 PASEO_HOME="${PASEO_HOME:-$HOME/.paseo}"
 DAEMON_URL="${DAEMON_URL:-http://127.0.0.1:6767}"
+ALLOW_MISSING_HERMES=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --root)        HERMES_PROFILES_DIR="$2"; shift 2 ;;
-    --paseo-home)  PASEO_HOME="$2"; shift 2 ;;
-    -h|--help)     sed -n '2,7p' "$0"; exit 0 ;;
+    --root)                 HERMES_PROFILES_DIR="$2"; shift 2 ;;
+    --paseo-home)           PASEO_HOME="$2"; shift 2 ;;
+    --allow-missing-hermes) ALLOW_MISSING_HERMES=1; shift ;;
+    -h|--help)              sed -n '2,9p' "$0"; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -40,6 +45,8 @@ if command -v hermes >/dev/null 2>&1; then
   else
     warn "custom --root given: skipped 'hermes profile list' (it only reads the default root)"
   fi
+elif [ "$ALLOW_MISSING_HERMES" = 1 ]; then
+  warn "hermes not on PATH — allowed in this mode (install logic is still fully checked)"
 else
   bad "hermes not on PATH — ACP seats cannot start"
 fi

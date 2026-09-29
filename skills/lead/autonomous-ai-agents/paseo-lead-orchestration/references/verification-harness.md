@@ -8,12 +8,12 @@ Do NOT assert only the default outcome — that proves nothing when the default 
 
 **Rule**: for every branch under test, exercise it with BOTH a value that matches the default AND a value that differs from the default. Only the differing-value assertion proves the branch actually wrote the requested role/state rather than silently falling through.
 
-Example (v2 add-participants via `departments` branch, where v1 default role = MEMBER):
+Example — an alternate input branch whose default role differs from the requested one:
 ```
- BAD:  add userB via departments with role=MEMBER  → assert MEMBER  ← proves nothing
- GOOD: add userB via departments with role=MEMBER  → assert MEMBER  (matches default, sanity)
-       add userC via departments with role=ADMIN   → assert ADMIN   (differs from default → discriminating)
-       add userD via departments with role=null    → assert MEMBER  (null = no patch = default preserved)
+ BAD:  add user B through the org branch with role=MEMBER → assert MEMBER  ← proves nothing (default == asserted)
+ GOOD: add user B through the org branch with role=MEMBER → assert MEMBER  (matches the default: sanity only)
+       add user C through the org branch with role=ADMIN  → assert ADMIN   (differs from the default → discriminating)
+       add user D through the org branch with role=null   → assert MEMBER  (null = no patch; default preserved)
 ```
 
 The null/omitted-role control is equally important: it proves the patch path is guarded (`if role != null`) and does not overwrite the default with `null` or `undefined`.
@@ -31,7 +31,7 @@ const token = jwt.sign(
 ```
 Seed Mongo + Redis directly for fixtures rather than going through the API — avoids dependency on endpoints under test contaminating the fixture state.
 
-Tag every inserted document with a sentinel field (`_roomTest: true`, `_testRun: '<scope>'`, etc.) for targeted cleanup:
+Tag every inserted document with a sentinel field (e.g. `_roomTest: true`, `_testRun: '<scope>'`) for targeted cleanup:
 ```js
 // cleanup — never use dropCollection or deleteMany without a filter
 await col.deleteMany({ _roomTest: true });

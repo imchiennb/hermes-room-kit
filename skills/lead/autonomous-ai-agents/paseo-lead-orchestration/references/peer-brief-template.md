@@ -7,7 +7,7 @@ Copy-paste this structure into `initialPrompt` when creating a peer agent. Fill 
 
 ### Outcome
 <test command> run from <worktree_root> must be fully green.
-Example: `python3 -m unittest tests.test_<module> -v` run from `~/.paseo/worktrees/<id>/peer-<scope>`
+Example: `python3 -m unittest tests.test_<module> -v` run from `<worktree root>` (`~/.paseo/worktrees/<id>/peer-<scope>`)
 
 ### Files allowed to change (exactly 2)
 - src/<module>.py

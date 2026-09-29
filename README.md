@@ -1,5 +1,7 @@
 # hermes-room-kit
 
+[![selftest](https://github.com/imchiennb/slp-hermes-setup/actions/workflows/selftest.yml/badge.svg)](https://github.com/imchiennb/slp-hermes-setup/actions/workflows/selftest.yml)
+
 A portable **seat-based agent room** for coding work: one human, one **Supervisor**, N **Lead** seats split by domain, and **Peer** seats that each own exactly one bounded write scope.
 
 It runs on [Paseo](https://paseo.sh) (UI + daemon + agent orchestration) and [Hermes Agent](https://hermes-agent.nousresearch.com) (the agent runtime behind each seat). This kit installs the room onto a machine, and turns any project — brand new or five years old — into a room-shaped workstream.
@@ -50,7 +52,7 @@ One Lead per domain, not one Lead total. A single-domain project uses one Lead.
 - **Hermes Agent** installed and on `PATH` (`hermes --version`). Developed against v0.21.x.
 - **Paseo Desktop** (AppImage/dmg) — it spawns the daemon at `127.0.0.1:6767`. Optional for `install.sh`, but this is where agents actually run. The optional `paseo` CLI (`@getpaseo/cli`) makes config reloads and agent listings easier.
 - `bash`, `git`, `python3`.
-- **An LLM provider key.** The shipped profiles are configured for a SwiCloud-compatible endpoint (`SWICLOUD_API_KEY`); point them at any OpenAI-compatible provider by editing `providers:` in each `profiles/*/config.yaml` and the matching `key_env` in the seat's `.env`.
+- **An LLM provider key.** The shipped profiles are configured for a SwiCloud-compatible endpoint (`SWICLOUD_API_KEY`); point them at any OpenAI-compatible provider — hosted or local — as described in [`docs/PROVIDERS.md`](docs/PROVIDERS.md). Give the three seats different models on purpose: the strongest coding model on the **Lead** seat, a cheap fast one on **Peer**.
 
 ## Quickstart — install on a machine
 
@@ -133,13 +135,14 @@ Improve a skill where you actually use it, then capture. Do not let the kit copy
 ## Repo layout
 
 ```
-install.sh · verify.sh · README.md · LICENSE
+install.sh · verify.sh · README.md · LICENSE · CONTRIBUTING.md
 profiles/{supervisor,lead,peer}/{config.yaml,AGENTS.md}
 profiles/shared/{WORKFLOW.md,PROMPT_TEMPLATES.md}
 skills/{supervisor,lead,peer}/<category>/<skill>/{SKILL.md,references,templates}
 paseo/room.fragment.json          # the provider + agent-profile entries to merge
 scripts/…                         # see the table above
-docs/{ONBOARDING.md,OPERATIONS.md}
+docs/{ONBOARDING.md,OPERATIONS.md,PROVIDERS.md}
+.github/workflows/selftest.yml    # the kit's own CI (must stay green)
 baselines/                        # generated per project (gitignored)
 ```
 
