@@ -66,7 +66,7 @@
         "name": "Peer",
         "color": "amber",
         "provider": "hermes-peer",
-        "model": "custom:swicloud:ds/deepseek-v4-flash",
+        "model": "custom:swicloud:cmc/deepseek/deepseek-v4-flash",
         "modeId": "default"
       }
     ]
