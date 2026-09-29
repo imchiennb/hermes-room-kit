@@ -3,3 +3,4 @@ state/
 *.tar.gz
 *.bak-*
 .env
+baselines/

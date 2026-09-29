@@ -29,6 +29,10 @@ while [ $# -gt 0 ]; do
 done
 
 REPO="$(cd "$REPO" 2>/dev/null && pwd)" || { echo "error: no such directory" >&2; exit 1; }
+if [ -n "$OUT" ]; then
+  mkdir -p "$(dirname "$OUT")"
+  OUT="$(cd "$(dirname "$OUT")" && pwd)/$(basename "$OUT")"   # absolute: we cd into the repo below
+fi
 cd "$REPO" || exit 1
 
 emit() { printf '%s\n' "$*"; [ -n "$OUT" ] && printf '%s\n' "$*" >> "$OUT"; }
@@ -79,7 +83,7 @@ detected=""
 test_dir=""
 [ -d tests ] && test_dir=tests
 [ -z "$test_dir" ] && [ -d test ] && test_dir=test
-if [ -n "$test_dir" ]; then
+if [ -n "$test_dir" ] && ls "$test_dir" >/dev/null 2>&1; then
   if [ -f pytest.ini ] || grep -qs "pytest" pyproject.toml 2>/dev/null || grep -rqs "^import pytest\|^from pytest" "$test_dir" 2>/dev/null; then
     detected="python3 -m pytest -q"
   else
@@ -89,20 +93,54 @@ fi
 if [ -z "$detected" ] && grep -qs "pytest" pyproject.toml 2>/dev/null; then
   detected="python3 -m pytest -q"
 fi
-if [ -z "$detected" ] && [ -f package.json ]; then
-  detected="$(python3 - "$PWD/package.json" <<'PY'
-import json,sys
-scripts=(json.load(open(sys.argv[1],encoding="utf-8")).get("scripts") or {})
-print("npm test" if "test" in scripts else "")
+
+# Node projects: read the real scripts instead of guessing
+if [ -f package.json ]; then
+  emit "- package.json scripts:"
+  python3 - "$PWD/package.json" <<'PY' | while read -r line; do emit "$line"; done
+import json, sys
+s = (json.load(open(sys.argv[1], encoding="utf-8")).get("scripts") or {})
+for k in ("test", "build", "lint", "typecheck", "check", "e2e"):
+    if k in s:
+        print(f"  - `npm run {k}` → {s[k]}")
+if "test" not in s:
+    print("  - **no `test` script — this repo has no runnable suite; acceptance must be build/behaviour based**")
+    gates = [k for k in ("build", "typecheck", "check") if k in s]
+    print(f"  - candidate gates: {', '.join('`npm run '+g+'`' for g in gates) if gates else '(none)'}")
+lint = s.get("lint", "")
+if "--fix" in lint or "-fix" in lint:
+    print(f"  - ⚠️ `npm run lint` contains `--fix`: running it REWRITES files — never use it as an acceptance gate")
 PY
-)"
+  [ -n "$detected" ] || detected=""
 fi
 [ -z "$detected" ] && [ -f Makefile ] && grep -qE '^test:' Makefile && detected="make test"
+
+# Legacy eslint config + modern eslint = wrong invocation trap
+if [ -f .eslintrc.js ] || [ -f .eslintrc.json ] || [ -f .eslintrc.cjs ]; then
+  if [ ! -f eslint.config.js ] && [ ! -f eslint.config.mjs ]; then
+    ev="$(npx --no-install eslint --version 2>/dev/null | tr -dc '0-9.')"
+    case "$ev" in
+      9.*|1[0-9].*) emit "- eslint $ev + legacy \`.eslintrc.*\`: plain \`eslint\` fails with \"couldn't find eslint.config.*\"; for a READ-ONLY baseline use \`ESLINT_USE_FLAT_CONFIG=false eslint …\`" ;;
+    esac
+  fi
+fi
+if [ -f .prettierrc ] || [ -f .prettierrc.json ]; then
+  pol="$(python3 -c "
+import json,sys
+try: print(json.load(open('.prettierrc')).get('endOfLine',''))
+except Exception: print('')" 2>/dev/null)"
+  if [ "$pol" = "crlf" ]; then
+    crlf=$(git ls-files '*.ts' '*.js' 2>/dev/null | head -200 | xargs -r grep -lc $'\r' 2>/dev/null | wc -l)
+    [ "$crlf" = 0 ] && emit "- ⚠️ prettier wants \`endOfLine: crlf\` but tracked files are LF → prettier rule noise (thousands of lint errors) and \`--fix\` would rewrite every file. Not an acceptance gate."
+  fi
+fi
 for ci in .github/workflows .gitlab-ci.yml .circleci Jenkinsfile azure-pipelines.yml .buildkite; do
   [ -e "$ci" ] && emit "- CI config: \`$ci\`"
 done
-emit "- detected test command: \`${detected:-unknown — ask the human}\`"
-emit "- lint/format config: $(ls -d ruff.toml .ruff.toml .flake8 .eslintrc* .prettierrc* 2>/dev/null | tr '\n' ' ' | sed 's/ $//')"
+compose="$(ls docker-compose*.yml compose*.yml 2>/dev/null | tr '\n' ' ' | sed 's/ $//')"
+[ -n "$compose" ] && emit "- local infra for a real smoke test: \`$compose\` (services need to be up — a room run cannot start them silently)"
+emit "- detected test command: \`${detected:-none — this repo has no test suite; define acceptance as build + observable behaviour}\`"
+emit "- lint/format config: $(ls -d ruff.toml .ruff.toml .flake8 .eslintrc* eslint.config* .prettierrc* 2>/dev/null | tr '\n' ' ' | sed 's/ $//')"
 emit ""
 
 emit "## Repo shape (helps the Lead find independent write scopes)"
