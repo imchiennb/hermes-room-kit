@@ -1,0 +1,60 @@
+_config_version: 49
+
+# =============================================================================
+# LEAD profile
+# Role: Technical framing, dependency order, verification, candidate acceptance
+# =============================================================================
+
+providers:
+  swicloud:
+    name: SwiCloud
+    base_url: "https://providers.swicloud.ink/v1"
+    key_env: SWICLOUD_API_KEY
+    api_mode: chat_completions
+    default_model: "ag/claude-sonnet-4-6"
+    discover_models: true
+
+model:
+  default: "ag/claude-sonnet-4-6"
+  provider: custom:swicloud
+
+agent:
+  max_turns: 150
+  reasoning_effort: medium
+
+# Lead can spawn Peer for independent review
+delegation:
+  max_iterations: 250
+  max_concurrent_children: 2
+
+# Full coding toolset
+platform_toolsets:
+  acp:
+    - browser
+    - code_execution
+    - delegation
+    - file
+    - memory
+    - session_search
+    - skills
+    - terminal
+    - todo
+    - vision
+    - web
+
+approvals:
+  mode: off  # auto_accept=true per Paseo config
+
+memory:
+  memory_enabled: true
+  user_profile_enabled: true
+
+compression:
+  enabled: true
+  threshold: 0.5
+  target_ratio: 0.2
+  protect_last_n: 20
+
+terminal:
+  backend: local
+  timeout: 180

@@ -1,0 +1,56 @@
+_config_version: 49
+
+# =============================================================================
+# PEER profile
+# Role: Bounded outcome — returns immutable candidate or concrete block signal
+# Independent review only; no delegation, no side effects beyond workspace
+# =============================================================================
+
+providers:
+  swicloud:
+    name: SwiCloud
+    base_url: "https://providers.swicloud.ink/v1"
+    key_env: SWICLOUD_API_KEY
+    api_mode: chat_completions
+    default_model: "ds/deepseek-v4-flash"
+    discover_models: true
+
+model:
+  default: "ds/deepseek-v4-flash"
+  provider: custom:swicloud
+
+agent:
+  max_turns: 80
+  reasoning_effort: medium
+
+# Peer does NOT delegate
+delegation:
+  max_concurrent_children: 0
+
+# Minimal toolset — read + review only, no spawning
+platform_toolsets:
+  acp:
+    - code_execution
+    - file
+    - session_search
+    - skills
+    - terminal
+    - vision
+    - web
+
+approvals:
+  mode: smart
+
+memory:
+  memory_enabled: false
+  user_profile_enabled: false
+
+compression:
+  enabled: true
+  threshold: 0.5
+  target_ratio: 0.2
+  protect_last_n: 20
+
+terminal:
+  backend: local
+  timeout: 180

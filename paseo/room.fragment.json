@@ -1,0 +1,74 @@
+{
+  "_comment": "Portable room fragment. install.sh merges ONLY these keys into the target ~/.paseo/config.json; every other provider and daemon setting is preserved.",
+  "agents": {
+    "providers": {
+      "hermes-supervisor": {
+        "extends": "acp",
+        "label": "Hermes (Supervisor)",
+        "description": "Routes Human intent, coordinates Lead and Peer",
+        "command": [
+          "hermes",
+          "acp",
+          "--profile",
+          "supervisor"
+        ],
+        "env": {}
+      },
+      "hermes-lead": {
+        "extends": "acp",
+        "label": "Hermes (Lead)",
+        "description": "Technical framing, implementation, verification",
+        "command": [
+          "hermes",
+          "acp",
+          "--profile",
+          "lead"
+        ],
+        "env": {}
+      },
+      "hermes-peer": {
+        "extends": "acp",
+        "label": "Hermes (Peer)",
+        "description": "Independent review — returns ACCEPT or BLOCK",
+        "command": [
+          "hermes",
+          "acp",
+          "--profile",
+          "peer"
+        ],
+        "env": {}
+      }
+    }
+  },
+  "daemon": {
+    "agentProfiles": [
+      {
+        "id": "agent_profile_mum1ru98_3g9wao3cvlb",
+        "name": "Lead",
+        "color": "sky",
+        "provider": "hermes-lead",
+        "model": "custom:ag/claude-sonnet-4-6",
+        "modeId": "dont_ask",
+        "featureValues": {
+          "auto_accept": true
+        }
+      },
+      {
+        "id": "agent_profile_mum1sqps_0xxklm00ujaj",
+        "name": "Supervisor",
+        "color": "emerald",
+        "provider": "hermes-supervisor",
+        "model": "custom:ag/claude-sonnet-4-6",
+        "modeId": "default"
+      },
+      {
+        "id": "agent_profile_mum1tbl1_8e7f60fmpo8",
+        "name": "Peer",
+        "color": "amber",
+        "provider": "hermes-peer",
+        "model": "custom:swicloud:ds/deepseek-v4-flash",
+        "modeId": "default"
+      }
+    ]
+  }
+}

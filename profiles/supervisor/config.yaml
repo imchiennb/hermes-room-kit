@@ -1,0 +1,62 @@
+_config_version: 49
+
+# =============================================================================
+# SUPERVISOR profile
+# Role: Route Human intent, bounded recovery, high-level coordination
+# =============================================================================
+
+providers:
+  swicloud:
+    name: SwiCloud
+    base_url: "https://providers.swicloud.ink/v1"
+    key_env: SWICLOUD_API_KEY
+    api_mode: chat_completions
+    default_model: "ag/claude-sonnet-4-6"
+    discover_models: true
+
+model:
+  default: "ag/claude-sonnet-4-6"
+  provider: custom:swicloud
+
+agent:
+  max_turns: 150
+  reasoning_effort: medium
+
+# Supervisor can delegate to Lead/Peer
+delegation:
+  max_iterations: 250
+  max_concurrent_children: 4
+
+# Full toolset — Supervisor needs to orchestrate
+platform_toolsets:
+  acp:
+    - browser
+    - clarify
+    - code_execution
+    - cronjob
+    - delegation
+    - file
+    - memory
+    - session_search
+    - skills
+    - terminal
+    - todo
+    - vision
+    - web
+
+approvals:
+  mode: smart
+
+memory:
+  memory_enabled: true
+  user_profile_enabled: true
+
+compression:
+  enabled: true
+  threshold: 0.5
+  target_ratio: 0.2
+  protect_last_n: 20
+
+terminal:
+  backend: local
+  timeout: 180
