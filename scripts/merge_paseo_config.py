@@ -124,6 +124,8 @@ def main() -> int:
     os.makedirs(os.path.dirname(os.path.abspath(args.config)), exist_ok=True)
     if existed:
         backup = f"{args.config}.bak-{time.strftime('%Y%m%d-%H%M%S')}"
+        if os.path.exists(backup):
+            backup = f"{backup}-{os.getpid()}"
         shutil.copy2(args.config, backup)
         print(f"  backup: {backup}")
 
