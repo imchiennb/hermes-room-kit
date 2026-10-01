@@ -47,7 +47,7 @@
         "name": "Lead",
         "color": "sky",
         "provider": "hermes-lead",
-        "model": "custom:ag/claude-sonnet-4-6",
+        "model": "custom:swicloud:cmc/deepseek/deepseek-v4-flash",
         "modeId": "dont_ask",
         "featureValues": {
           "auto_accept": true
@@ -58,7 +58,7 @@
         "name": "Supervisor",
         "color": "emerald",
         "provider": "hermes-supervisor",
-        "model": "custom:ag/claude-sonnet-4-6",
+        "model": "custom:swicloud:cmc/deepseek/deepseek-v4-flash",
         "modeId": "default"
       },
       {

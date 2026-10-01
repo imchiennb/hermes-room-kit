@@ -89,7 +89,7 @@ That makes peers run sequentially, not in parallel, even though each `tool_call`
 ```python
 mcp__paseo__create_agent(
     title="peer-<module>: <one-line purpose>",
-    provider="hermes-peer/custom:swicloud:ds/deepseek-v4-flash",
+    provider="hermes-peer/custom:swicloud:cmc/deepseek/deepseek-v4-flash",
     settings={"modeId": "dont_ask"},
     workspaceId="<id from step 2>",
     notifyOnFinish=True,

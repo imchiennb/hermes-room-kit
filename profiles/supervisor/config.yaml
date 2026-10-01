@@ -11,11 +11,11 @@ providers:
     base_url: "https://providers.swicloud.ink/v1"
     key_env: SWICLOUD_API_KEY
     api_mode: chat_completions
-    default_model: "ag/claude-sonnet-4-6"
+    default_model: "cmc/deepseek/deepseek-v4-flash"
     discover_models: true
 
 model:
-  default: "ag/claude-sonnet-4-6"
+  default: "cmc/deepseek/deepseek-v4-flash"
   provider: custom:swicloud
 
 agent:
