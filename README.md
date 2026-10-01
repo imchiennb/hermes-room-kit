@@ -1,6 +1,6 @@
 # hermes-room-kit
 
-[![selftest](https://github.com/imchiennb/slp-hermes-setup/actions/workflows/selftest.yml/badge.svg)](https://github.com/imchiennb/slp-hermes-setup/actions/workflows/selftest.yml)
+[![selftest](https://github.com/imchiennb/hermes-room-kit/actions/workflows/selftest.yml/badge.svg)](https://github.com/imchiennb/hermes-room-kit/actions/workflows/selftest.yml)
 
 A portable **seat-based agent room** for coding work: one human, one **Supervisor**, N **Lead** seats split by domain, and **Peer** seats that each own exactly one bounded write scope.
 
@@ -52,7 +52,7 @@ One Lead per domain, not one Lead total. A single-domain project uses one Lead.
 - **Hermes Agent** installed and on `PATH` (`hermes --version`). Developed against v0.21.x.
 - **Paseo Desktop** (AppImage/dmg) — it spawns the daemon at `127.0.0.1:6767`. Optional for `install.sh`, but this is where agents actually run. The optional `paseo` CLI (`@getpaseo/cli`) makes config reloads and agent listings easier.
 - `bash`, `git`, `python3`.
-- **An LLM provider key.** The shipped profiles are configured for a SwiCloud-compatible endpoint (`SWICLOUD_API_KEY`); point them at any OpenAI-compatible provider — hosted or local — as described in [`docs/PROVIDERS.md`](docs/PROVIDERS.md). Give the three seats different models on purpose: the strongest coding model on the **Lead** seat, a cheap fast one on **Peer**.
+- **An LLM provider key.** The shipped profiles are configured for a SwiCloud-compatible endpoint (`SWICLOUD_API_KEY`); point them at any OpenAI-compatible provider — hosted or local — as described in [`docs/PROVIDERS.md`](docs/PROVIDERS.md). All three seats ship on the same model id today (`cmc/deepseek/deepseek-v4-flash`), so a fresh install runs with one key; when your provider serves stronger choices, split them on purpose — strongest coding model on **Lead**, cheap and fast on **Peer**.
 
 ## Quickstart — install on a machine
 
@@ -70,7 +70,7 @@ bash install.sh
 #    (secrets are per-profile; ~/.hermes/.env is NOT inherited by a profile)
 
 # 5. verify
-bash verify.sh          # expect: "20 passed, 0 failed"
+bash verify.sh          # expect: "N passed, 0 failed" (warnings are informational)
 ```
 
 Then open Paseo Desktop: the **Supervisor / Lead / Peer** agent profiles are listed.

@@ -68,6 +68,10 @@ model:
 
 ## Give the seats different models — on purpose
 
+**What the kit ships today:** all three seats default to `cmc/deepseek/deepseek-v4-flash` on the SwiCloud endpoint, so a fresh install is runnable with a single key and no model shopping. Gateway model ids change under you — an earlier id in this kit (`ds/deepseek-v4-flash`) stopped being served, and the seats moved with it. Check your provider's `/models` (the profiles have `discover_models: true`) before pinning an id.
+
+The table below is the guidance to apply **when you have the choice**; splitting the seats is better than running all three on one model, but a working install on one id beats a broken install on three.
+
 | Seat | Sizing guidance | Why |
 |---|---|---|
 | Supervisor | strong reasoning, long context | it frames the work, verifies claims and reports numbers; it writes almost no code |
